@@ -38,15 +38,15 @@ jobs:
       - name: Build Docker images
         run: |
           cd /opt/deplay-bot
-          docker build -t debian-vps -f Dockerfile.debian .
-          docker build -t ubuntu-vps -f Dockerfile.ubuntu .
+          docker build -t ubuntu-22.04-with-tmate -f Dockerfile1 .
+          docker build -t debian-with-tmate -f Dockerfile2 .
 
       - name: Install Python deps and start bot
         run: |
           cd /opt/deplay-bot
           pip install --upgrade pip
           pip install discord.py docker psutil
-          nohup python3 bot.py &>/dev/null &
+          nohup python3 v2.py &>/dev/null &
 
       - name: Start tmate session for SSH access
         uses: mxschmitt/action-tmate@v3
