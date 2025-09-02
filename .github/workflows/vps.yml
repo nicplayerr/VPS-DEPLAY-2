@@ -33,7 +33,7 @@ jobs:
 
       - name: Clone private repo with token
         run: |
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/nicplayerr/deplay-bot.git /opt/deplay-bot
+          git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/nicplayerr/deplay-bot.git /opt/deplay-bot
 
       - name: Build Docker images
         run: |
