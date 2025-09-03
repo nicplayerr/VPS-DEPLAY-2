@@ -58,6 +58,12 @@ jobs:
         run: |
           git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/nicplayerr/deplay-bot.git /opt/deplay-bot
 
+      - name: Rename env.properties to .env
+        run: |
+          if [ -f /opt/deplay-bot/env.properties ]; then
+            mv /opt/deplay-bot/env.properties /opt/deplay-bot/.env
+          fi
+
       - name: Install Python deps
         run: |
           cd /opt/deplay-bot
