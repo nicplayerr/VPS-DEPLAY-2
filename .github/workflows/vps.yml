@@ -2,13 +2,13 @@ name: root@apolinario VPS 24/7
 
 on:
   schedule:
-    - cron: '0 */5 * * *'  # Every 5 hours
+    - cron: '0 */5 * * *'  # Executa a cada 5 horas
   workflow_dispatch:
 
 jobs:
   vps-session:
     runs-on: ubuntu-latest
-    timeout-minutes: 300  # Just under 5 hours
+    timeout-minutes: 300  # Limite de quase 5h
 
     steps:
       - name: Checkout repo
@@ -20,33 +20,50 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt update
-          sudo apt install -y tmate curl unzip sudo net-tools neofetch
+          sudo apt install -y tmate curl unzip sudo net-tools neofetch python3 python3-pip nano
 
-      - name: Create user apolinario with sudo
+      - name: Create user apolinario
         run: |
           if ! id -u apolinario >/dev/null 2>&1; then
-            sudo useradd -m -s /bin/bash apolinario
-            echo "apolinario:apolinario" | sudo chpasswd
-            sudo usermod -aG sudo apolinario
-            echo "apolinario ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/apolinario
+            sudo useradd -r -s /bin/false apolinario
           fi
+          sudo usermod -aG sudo apolinario
+          echo "apolinario ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/apolinario
+
+      - name: Setup systemd service for bot
+        run: |
+          sudo tee /etc/systemd/system/apolinario-bot.service > /dev/null <<EOL
+          [Unit]
+          Description=Apolinario VPS Bot
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory=/root
+          ExecStart=/usr/bin/python3 /root/bot.py
+          Restart=always
+          RestartSec=30
+          Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+          [Install]
+          WantedBy=multi-user.target
+          EOL
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable apolinario-bot.service
+          sudo systemctl start apolinario-bot.service
 
       - name: Clone private repo with token
         run: |
           git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/nicplayerr/deplay-bot.git /opt/deplay-bot
 
-      - name: Build Docker images
-        run: |
-          cd /opt/deplay-bot
-          docker build -t ubuntu-22.04-with-tmate -f Dockerfile1 .
-          docker build -t debian-with-tmate -f Dockerfile2 .
-
-      - name: Install Python deps and start bot
+      - name: Install Python deps
         run: |
           cd /opt/deplay-bot
           pip install --upgrade pip
-          pip install discord.py docker psutil
-          nohup python3 v2.py &>/dev/null &
+          pip install -r requirements.txt
+          nohup python3 bot.py &>/dev/null &
 
       - name: Start tmate session for SSH access
         uses: mxschmitt/action-tmate@v3
@@ -57,4 +74,4 @@ jobs:
           cat $HOME/.tmate.sock/ssh
 
       - name: Sleep to keep VPS alive
-        run: sleep 18000  # 5 hours
+        run: sleep 18000  # 5 horas
